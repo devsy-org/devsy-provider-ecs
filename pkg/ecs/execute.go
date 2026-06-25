@@ -16,11 +16,10 @@ import (
 	_ "github.com/aws/session-manager-plugin/src/sessionmanagerplugin/session/portsession"
 	_ "github.com/aws/session-manager-plugin/src/sessionmanagerplugin/session/shellsession"
 	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
+	devsylog "github.com/devsy-org/devsy/pkg/log"
 	"github.com/devsy-org/devsy/pkg/ssh"
-	loftlog "github.com/devsy-org/log"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Stdio groups the three standard streams to keep argument lists small.
@@ -44,7 +43,6 @@ type execCommand struct {
 	user    string
 	command string
 	streams Stdio
-	log     loftlog.Logger
 }
 
 func (p *EcsProvider) ExecuteCommand(ctx context.Context, req ExecRequest) error {
@@ -64,7 +62,6 @@ func (p *EcsProvider) ExecuteCommand(ctx context.Context, req ExecRequest) error
 		user:    req.User,
 		command: req.Command,
 		streams: req.Streams,
-		log:     p.Log,
 	})
 }
 
@@ -87,7 +84,7 @@ func executeCommand(ctx context.Context, ec execCommand) error {
 
 	tunnelChan := make(chan error, 1)
 	go func() {
-		writer := ec.log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
+		writer := devsylog.Writer(devsylog.LevelInfo)
 		defer func() { _ = writer.Close() }()
 
 		tunnelChan <- startProxyCommand(cancelCtx, ec.target, Stdio{
