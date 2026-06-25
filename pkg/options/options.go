@@ -29,40 +29,27 @@ type Options struct {
 func FromEnv() (*Options, error) {
 	retOptions := &Options{}
 
-	var err error
-
 	// required
-	retOptions.DevContainerID, err = fromEnvOrError("DEVCONTAINER_ID")
-	if err != nil {
-		return nil, err
+	required := []struct {
+		name string
+		dest *string
+	}{
+		{"DEVCONTAINER_ID", &retOptions.DevContainerID},
+		{"CLUSTER_ID", &retOptions.ClusterID},
+		{"SUBNET_ID", &retOptions.SubnetID},
+		{"CLUSTER_ARCHITECTURE", &retOptions.ClusterArchitecture},
+		{"TASK_CPU", &retOptions.TaskCpu},
+		{"TASK_MEMORY", &retOptions.TaskMemory},
+		{"LAUNCH_TYPE", &retOptions.LaunchType},
+		{"ASSIGN_PUBLIC_IP", &retOptions.AssignPublicIp},
 	}
-	retOptions.ClusterID, err = fromEnvOrError("CLUSTER_ID")
-	if err != nil {
-		return nil, err
-	}
-	retOptions.SubnetID, err = fromEnvOrError("SUBNET_ID")
-	if err != nil {
-		return nil, err
-	}
-	retOptions.ClusterArchitecture, err = fromEnvOrError("CLUSTER_ARCHITECTURE")
-	if err != nil {
-		return nil, err
-	}
-	retOptions.TaskCpu, err = fromEnvOrError("TASK_CPU")
-	if err != nil {
-		return nil, err
-	}
-	retOptions.TaskMemory, err = fromEnvOrError("TASK_MEMORY")
-	if err != nil {
-		return nil, err
-	}
-	retOptions.LaunchType, err = fromEnvOrError("LAUNCH_TYPE")
-	if err != nil {
-		return nil, err
-	}
-	retOptions.AssignPublicIp, err = fromEnvOrError("ASSIGN_PUBLIC_IP")
-	if err != nil {
-		return nil, err
+	for _, opt := range required {
+		val, err := fromEnvOrError(opt.name)
+		if err != nil {
+			return nil, err
+		}
+
+		*opt.dest = val
 	}
 
 	// optional

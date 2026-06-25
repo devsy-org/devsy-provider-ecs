@@ -3,9 +3,9 @@ package cmd
 import (
 	"context"
 
-	"github.com/loft-sh/devpod-provider-ecs/pkg/ecs"
-	"github.com/loft-sh/devpod-provider-ecs/pkg/options"
-	"github.com/loft-sh/log"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/ecs"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
+	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +15,7 @@ type TunnelCmd struct {
 	Port int
 }
 
-// NewTunnelCmd returns a new command
+// NewTunnelCmd returns a new command.
 func NewTunnelCmd() *cobra.Command {
 	cmd := &TunnelCmd{}
 	cobraCmd := &cobra.Command{
@@ -29,7 +29,8 @@ func NewTunnelCmd() *cobra.Command {
 	}
 
 	cobraCmd.Flags().StringVar(&cmd.Target, "target", "", "The target to connect to.")
-	cobraCmd.Flags().IntVar(&cmd.Port, "port", options.DefaultSSHPort, "The port to use where the ssh server is running")
+	cobraCmd.Flags().
+		IntVar(&cmd.Port, "port", options.DefaultSSHPort, "The port to use where the ssh server is running")
 	return cobraCmd
 }
 

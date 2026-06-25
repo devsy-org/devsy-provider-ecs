@@ -3,17 +3,18 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 
-	"github.com/loft-sh/devpod-provider-ecs/pkg/ecs"
-	"github.com/loft-sh/devpod-provider-ecs/pkg/options"
-	"github.com/loft-sh/log"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/ecs"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
+	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 )
 
-// TargetArchitectureCmd holds the cmd flags
+// TargetArchitectureCmd holds the cmd flags.
 type TargetArchitectureCmd struct{}
 
-// NewTargetArchitectureCmd defines a command
+// NewTargetArchitectureCmd defines a command.
 func NewTargetArchitectureCmd() *cobra.Command {
 	cmd := &TargetArchitectureCmd{}
 	targetArchitectureCmd := &cobra.Command{
@@ -32,8 +33,12 @@ func NewTargetArchitectureCmd() *cobra.Command {
 	return targetArchitectureCmd
 }
 
-// Run runs the command logic
-func (cmd *TargetArchitectureCmd) Run(ctx context.Context, options *options.Options, log log.Logger) error {
+// Run runs the command logic.
+func (cmd *TargetArchitectureCmd) Run(
+	ctx context.Context,
+	options *options.Options,
+	log log.Logger,
+) error {
 	ecsProvider, err := ecs.NewProvider(ctx, options, log)
 	if err != nil {
 		return err
@@ -44,6 +49,6 @@ func (cmd *TargetArchitectureCmd) Run(ctx context.Context, options *options.Opti
 		return err
 	}
 
-	fmt.Println(arch)
-	return nil
+	_, err = fmt.Fprintln(os.Stdout, arch)
+	return err
 }

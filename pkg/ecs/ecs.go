@@ -12,13 +12,27 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
-	"github.com/loft-sh/devpod-provider-ecs/pkg/options"
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/driver"
-	"github.com/loft-sh/log"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
+	"github.com/devsy-org/devsy/pkg/devcontainer/config"
+	"github.com/devsy-org/devsy/pkg/driver"
+	"github.com/devsy-org/log"
 )
 
-func NewProvider(ctx context.Context, options *options.Options, logs log.Logger) (*EcsProvider, error) {
+const statusRunning = "running"
+
+type EcsProvider struct {
+	Config    *options.Options
+	AwsConfig aws.Config
+	Log       log.Logger
+
+	client *ecs.Client
+}
+
+func NewProvider(
+	ctx context.Context,
+	options *options.Options,
+	logs log.Logger,
+) (*EcsProvider, error) {
 	cfg, err := awsConfig.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -34,14 +48,6 @@ func NewProvider(ctx context.Context, options *options.Options, logs log.Logger)
 	}
 
 	return provider, nil
-}
-
-type EcsProvider struct {
-	Config    *options.Options
-	AwsConfig aws.Config
-	Log       log.Logger
-
-	client *ecs.Client
 }
 
 func (p *EcsProvider) TargetArchitecture(ctx context.Context, workspaceId string) (string, error) {
@@ -67,27 +73,11 @@ func (p *EcsProvider) StopTask(ctx context.Context, workspaceId string) error {
 	return p.stopTask(ctx, workspaceId)
 }
 
-func (p *EcsProvider) stopTask(ctx context.Context, workspaceId string) error {
-	// stop the task
-	task, err := p.getTaskID(ctx, workspaceId)
-	if err != nil {
-		return err
-	} else if task != nil {
-		// delete the task
-		p.Log.Infof("Stopping task...")
-		_, err = p.client.StopTask(ctx, &ecs.StopTaskInput{
-			Task:    task.TaskArn,
-			Cluster: options.Ptr(p.Config.ClusterID),
-		})
-		if err != nil {
-			return fmt.Errorf("stop task: %w", err)
-		}
-	}
-
-	return nil
-}
-
-func (p *EcsProvider) RunTask(ctx context.Context, workspaceId string, runOptions *driver.RunOptions) error {
+func (p *EcsProvider) RunTask(
+	ctx context.Context,
+	workspaceId string,
+	runOptions *driver.RunOptions,
+) error {
 	err := p.registerTaskDefinition(ctx, workspaceId, runOptions)
 	if err != nil {
 		return err
@@ -103,7 +93,10 @@ func (p *EcsProvider) RunTask(ctx context.Context, workspaceId string, runOption
 	return nil
 }
 
-func (p *EcsProvider) FindTask(ctx context.Context, workspaceId string) (*config.ContainerDetails, error) {
+func (p *EcsProvider) FindTask(
+	ctx context.Context,
+	workspaceId string,
+) (*config.ContainerDetails, error) {
 	task, err := p.getTaskID(ctx, workspaceId)
 	if err != nil {
 		return nil, err
@@ -120,26 +113,12 @@ func (p *EcsProvider) FindTask(ctx context.Context, workspaceId string) (*config
 	}
 	labels := taskDefinition.TaskDefinition.ContainerDefinitions[0].DockerLabels
 
-	// status
-	status := "created"
-	if task.LastStatus != nil && strings.ToUpper(*task.LastStatus) == string(types.DesiredStatusRunning) {
-		status = "running"
-	} else if task.LastStatus != nil && strings.ToUpper(*task.LastStatus) == string(types.DesiredStatusStopped) {
-		status = "exited"
-	}
-
-	// started at
-	startedAt := ""
-	if task.StartedAt != nil {
-		startedAt = task.StartedAt.String()
-	}
-
 	return &config.ContainerDetails{
 		ID:      *task.TaskArn,
 		Created: task.CreatedAt.String(),
 		State: config.ContainerDetailsState{
-			Status:    status,
-			StartedAt: startedAt,
+			Status:    taskStatus(task),
+			StartedAt: taskStartedAt(task),
 		},
 		Config: config.ContainerDetailsConfig{
 			Labels: labels,
@@ -165,10 +144,30 @@ func (p *EcsProvider) DeleteTask(ctx context.Context, workspaceId string) error 
 	return nil
 }
 
+func (p *EcsProvider) stopTask(ctx context.Context, workspaceId string) error {
+	// stop the task
+	task, err := p.getTaskID(ctx, workspaceId)
+	if err != nil {
+		return err
+	} else if task != nil {
+		// delete the task
+		p.Log.Infof("Stopping task...")
+		_, err = p.client.StopTask(ctx, &ecs.StopTaskInput{
+			Task:    task.TaskArn,
+			Cluster: options.Ptr(p.Config.ClusterID),
+		})
+		if err != nil {
+			return fmt.Errorf("stop task: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (p *EcsProvider) getTaskID(ctx context.Context, workspaceId string) (*types.Task, error) {
 	runningTaskArns, err := p.client.ListTasks(ctx, &ecs.ListTasksInput{
 		Cluster:       options.Ptr(p.Config.ClusterID),
-		Family:        options.Ptr("devpod-" + workspaceId),
+		Family:        options.Ptr("devsy-" + workspaceId),
 		DesiredStatus: types.DesiredStatusRunning,
 		MaxResults:    options.Ptr(int32(10)),
 	})
@@ -181,7 +180,7 @@ func (p *EcsProvider) getTaskID(ctx context.Context, workspaceId string) (*types
 	if len(taskArns) == 0 {
 		stoppedTaskArns, err := p.client.ListTasks(ctx, &ecs.ListTasksInput{
 			Cluster:       options.Ptr(p.Config.ClusterID),
-			Family:        options.Ptr("devpod-" + workspaceId),
+			Family:        options.Ptr("devsy-" + workspaceId),
 			DesiredStatus: types.DesiredStatusStopped,
 			MaxResults:    options.Ptr(int32(10)),
 		})
@@ -200,11 +199,12 @@ func (p *EcsProvider) getTaskID(ctx context.Context, workspaceId string) (*types
 		Tasks:   taskArns,
 		Cluster: options.Ptr(p.Config.ClusterID),
 	})
-	if err != nil {
+	switch {
+	case err != nil:
 		return nil, fmt.Errorf("describe tasks: %w", err)
-	} else if len(tasks.Failures) > 0 {
+	case len(tasks.Failures) > 0:
 		return nil, fmt.Errorf("describe tasks failures: %s", *tasks.Failures[0].Reason)
-	} else if len(tasks.Tasks) == 0 {
+	case len(tasks.Tasks) == 0:
 		return nil, nil
 	}
 
@@ -249,7 +249,10 @@ func (p *EcsProvider) startTask(ctx context.Context, workspaceId string) error {
 		return fmt.Errorf("run task failure: %w", errors.New(*taskOutput.Failures[0].Reason))
 	}
 
-	// wait for task to come up
+	return p.waitForTaskRunning(ctx, workspaceId)
+}
+
+func (p *EcsProvider) waitForTaskRunning(ctx context.Context, workspaceId string) error {
 	timeout := time.Minute * 5
 	now := time.Now()
 	for time.Since(now) < timeout {
@@ -257,21 +260,63 @@ func (p *EcsProvider) startTask(ctx context.Context, workspaceId string) error {
 		task, err := p.getTaskID(ctx, workspaceId)
 		if err != nil {
 			return fmt.Errorf("error retrieving task: %w", err)
-		} else if task != nil {
-			if task.DesiredStatus != nil && strings.ToLower(*task.DesiredStatus) != "running" {
-				if task.StoppedReason != nil {
-					return fmt.Errorf("run task failed, task was stopped: %s", *task.StoppedReason)
-				}
+		}
 
-				return fmt.Errorf("run task failed, task was stopped without a reason")
-			} else if task.LastStatus != nil && strings.ToLower(*task.LastStatus) == "running" {
-				p.Log.Info("Task successfully started")
-				return nil
-			}
+		running, err := taskRunning(task)
+		if err != nil {
+			return err
+		} else if running {
+			p.Log.Info("Task successfully started")
+			return nil
 		}
 
 		time.Sleep(time.Second * 5)
 	}
 
-	return fmt.Errorf("run task failed, timed out waiting for task to be running")
+	return errors.New("run task failed, timed out waiting for task to be running")
+}
+
+// taskRunning reports whether the task has reached the running state. It returns
+// an error if the task was stopped, and (false, nil) while still pending.
+func taskRunning(task *types.Task) (bool, error) {
+	if task == nil {
+		return false, nil
+	}
+
+	if task.DesiredStatus != nil && strings.ToLower(*task.DesiredStatus) != statusRunning {
+		if task.StoppedReason != nil {
+			return false, fmt.Errorf("run task failed, task was stopped: %s", *task.StoppedReason)
+		}
+
+		return false, errors.New("run task failed, task was stopped without a reason")
+	}
+
+	if task.LastStatus != nil && strings.ToLower(*task.LastStatus) == statusRunning {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func taskStatus(task *types.Task) string {
+	if task.LastStatus == nil {
+		return "created"
+	}
+
+	switch strings.ToUpper(*task.LastStatus) {
+	case string(types.DesiredStatusRunning):
+		return statusRunning
+	case string(types.DesiredStatusStopped):
+		return "exited"
+	default:
+		return "created"
+	}
+}
+
+func taskStartedAt(task *types.Task) string {
+	if task.StartedAt != nil {
+		return task.StartedAt.String()
+	}
+
+	return ""
 }

@@ -15,27 +15,60 @@ import (
 	"github.com/aws/session-manager-plugin/src/sessionmanagerplugin/session"
 	_ "github.com/aws/session-manager-plugin/src/sessionmanagerplugin/session/portsession"
 	_ "github.com/aws/session-manager-plugin/src/sessionmanagerplugin/session/shellsession"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
+	"github.com/devsy-org/devsy/pkg/ssh"
+	loftlog "github.com/devsy-org/log"
 	"github.com/google/uuid"
-	"github.com/loft-sh/devpod-provider-ecs/pkg/options"
-	"github.com/loft-sh/devpod/pkg/ssh"
-	loftlog "github.com/loft-sh/log"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-func (p *EcsProvider) ExecuteCommand(ctx context.Context, workspaceId, user, command string, stdin io.Reader, stdout, stderr io.Writer) error {
-	task, err := p.getTaskID(ctx, workspaceId)
+// Stdio groups the three standard streams to keep argument lists small.
+type Stdio struct {
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+}
+
+// ExecRequest describes a command to execute inside a workspace container.
+type ExecRequest struct {
+	WorkspaceID string
+	User        string
+	Command     string
+	Streams     Stdio
+}
+
+// execCommand bundles everything needed to run a command inside a container.
+type execCommand struct {
+	target  string
+	user    string
+	command string
+	streams Stdio
+	log     loftlog.Logger
+}
+
+func (p *EcsProvider) ExecuteCommand(ctx context.Context, req ExecRequest) error {
+	task, err := p.getTaskID(ctx, req.WorkspaceID)
 	if err != nil {
 		return err
 	} else if task == nil {
-		return fmt.Errorf("no task for workspace %s found", workspaceId)
+		return fmt.Errorf("no task for workspace %s found", req.WorkspaceID)
 	}
 
-	target := "ecs:" + getIDFromArn(p.Config.ClusterID) + "_" + getIDFromArn(*task.TaskArn) + "_" + *task.Containers[0].RuntimeId
-	return executeCommand(ctx, target, user, command, stdin, stdout, stderr, p.Log)
+	target := "ecs:" + getIDFromArn(p.Config.ClusterID) +
+		"_" + getIDFromArn(*task.TaskArn) +
+		"_" + *task.Containers[0].RuntimeId
+
+	return executeCommand(ctx, execCommand{
+		target:  target,
+		user:    req.User,
+		command: req.Command,
+		streams: req.Streams,
+		log:     p.Log,
+	})
 }
 
-func executeCommand(ctx context.Context, target, user, command string, stdin io.Reader, stdout, stderr io.Writer, log loftlog.Logger) error {
+func executeCommand(ctx context.Context, ec execCommand) error {
 	// create context
 	cancelCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -44,36 +77,46 @@ func executeCommand(ctx context.Context, target, user, command string, stdin io.
 	if err != nil {
 		return err
 	}
-	defer stdinWriter.Close()
+	defer func() { _ = stdinWriter.Close() }()
 
 	stdoutReader, stdoutWriter, err := os.Pipe()
 	if err != nil {
 		return err
 	}
-	defer stdoutWriter.Close()
+	defer func() { _ = stdoutWriter.Close() }()
 
 	tunnelChan := make(chan error, 1)
 	go func() {
-		writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
-		defer writer.Close()
+		writer := ec.log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
+		defer func() { _ = writer.Close() }()
 
-		tunnelChan <- startProxyCommand(cancelCtx, target, stdinReader, stdoutWriter, writer)
+		tunnelChan <- startProxyCommand(cancelCtx, ec.target, Stdio{
+			Stdin:  stdinReader,
+			Stdout: stdoutWriter,
+			Stderr: writer,
+		})
 	}()
 
 	// connect to container
 	containerChan := make(chan error, 1)
 	go func() {
 		// start ssh client as root / default user
-		sshClient, err := ssh.StdioClientWithUser(stdoutReader, stdinWriter, user, false)
+		sshClient, err := ssh.StdioClientWithUser(stdoutReader, stdinWriter, ec.user, false)
 		if err != nil {
 			containerChan <- errors.Wrap(err, "create ssh client")
 			return
 		}
 
-		defer sshClient.Close()
+		defer func() { _ = sshClient.Close() }()
 		defer cancel()
 
-		containerChan <- ssh.Run(cancelCtx, sshClient, command, stdin, stdout, stderr)
+		containerChan <- ssh.Run(cancelCtx, ssh.RunOptions{
+			Client:  sshClient,
+			Command: ec.command,
+			Stdin:   ec.streams.Stdin,
+			Stdout:  ec.streams.Stdout,
+			Stderr:  ec.streams.Stderr,
+		})
 	}()
 
 	// wait for result
@@ -85,21 +128,23 @@ func executeCommand(ctx context.Context, target, user, command string, stdin io.
 	}
 }
 
-func startProxyCommand(ctx context.Context, target string, stdin io.Reader, stdout, stderr io.Writer) error {
+func startProxyCommand(ctx context.Context, target string, streams Stdio) error {
 	executable, err := os.Executable()
 	if err != nil {
 		return err
 	}
 
-	cmd := exec.CommandContext(
+	// Re-invokes this provider's own binary (os.Executable) to open the tunnel,
+	// so the command path is trusted rather than user-supplied.
+	cmd := exec.CommandContext( // #nosec G204
 		ctx,
 		executable,
 		"tunnel",
 		"--target", target,
 	)
-	cmd.Stdin = stdin
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
+	cmd.Stdin = streams.Stdin
+	cmd.Stdout = streams.Stdout
+	cmd.Stderr = streams.Stderr
 	return cmd.Run()
 }
 
@@ -113,13 +158,14 @@ func getIDFromArn(arn string) string {
 }
 
 func (p *EcsProvider) StartSession(target string, port int) error {
-	out, err := ssm.NewFromConfig(p.AwsConfig).StartSession(context.Background(), &ssm.StartSessionInput{
-		Target:       options.Ptr(target),
-		DocumentName: options.Ptr("AWS-StartSSHSession"),
-		Parameters: map[string][]string{
-			"portNumber": {strconv.Itoa(port)},
-		},
-	})
+	out, err := ssm.NewFromConfig(p.AwsConfig).
+		StartSession(context.Background(), &ssm.StartSessionInput{
+			Target:       options.Ptr(target),
+			DocumentName: options.Ptr("AWS-StartSSHSession"),
+			Parameters: map[string][]string{
+				"portNumber": {strconv.Itoa(port)},
+			},
+		})
 	if err != nil {
 		return err
 	}

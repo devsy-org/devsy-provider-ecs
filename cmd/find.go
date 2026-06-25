@@ -4,17 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
-	"github.com/loft-sh/devpod-provider-ecs/pkg/ecs"
-	"github.com/loft-sh/devpod-provider-ecs/pkg/options"
-	"github.com/loft-sh/log"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/ecs"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
+	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 )
 
-// FindCmd holds the cmd flags
+// FindCmd holds the cmd flags.
 type FindCmd struct{}
 
-// NewFindCmd defines a command
+// NewFindCmd defines a command.
 func NewFindCmd() *cobra.Command {
 	cmd := &FindCmd{}
 	findCmd := &cobra.Command{
@@ -33,7 +34,7 @@ func NewFindCmd() *cobra.Command {
 	return findCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *FindCmd) Run(ctx context.Context, options *options.Options, log log.Logger) error {
 	ecsProvider, err := ecs.NewProvider(ctx, options, log)
 	if err != nil {
@@ -52,6 +53,6 @@ func (cmd *FindCmd) Run(ctx context.Context, options *options.Options, log log.L
 		return fmt.Errorf("error marshalling container details: %w", err)
 	}
 
-	fmt.Println(string(out))
-	return nil
+	_, err = fmt.Fprintln(os.Stdout, string(out))
+	return err
 }

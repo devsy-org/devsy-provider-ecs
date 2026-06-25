@@ -1,14 +1,14 @@
-# ECS Provider for DevPod
+# ECS Provider for Devsy
 
-[![Join us on Slack!](docs/static/media/slack.svg)](https://slack.loft.sh/) [![Open in DevPod!](https://devpod.sh/assets/open-in-devpod.svg)](https://devpod.sh/open#https://github.com/loft-sh/devpod-provider-ecs)
+[![Open in Devsy!](https://img.shields.io/badge/open_in_devsy-8A2BE2?style=for-the-badge)](https://devsy.sh/open#https://github.com/devsy-org/devsy-provider-ecs)
 
 ## Getting started
 
-The provider is available for auto-installation using 
+The provider is available for auto-installation using
 
 ```sh
-devpod provider add ecs
-devpod provider use ecs
+devsy provider add ecs
+devsy provider use ecs
 ```
 
 Follow the on-screen instructions to complete the setup.
@@ -22,12 +22,16 @@ The provider will inherit the login information from `aws cli` or you can
 specify in your environment the `AWS_ACCESS_KEY_ID=`
 and `AWS_SECRET_ACCESS_KEY=` variables.
 
-### Creating your first DevPod env with aws
+### Creating your first Devsy env with ECS
 
 After the initial setup, just use:
 
 ```sh
-devpod up .
+devsy up .
 ```
 
 You'll need to wait for the task and environment setup.
+
+## Local Development
+
+To build and test the provider locally, use [task](https://taskfile.dev/) `task build:provider:dev`. The provider file is created in `./dist/provider.yaml`.

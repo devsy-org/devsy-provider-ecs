@@ -1,19 +1,28 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 
-	"github.com/loft-sh/devpod-provider-ecs/pkg/version"
-	"github.com/loft-sh/log"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/version"
+	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
 
-// NewRootCmd returns a new root command
+// BuildInfo carries version metadata injected at build time.
+type BuildInfo struct {
+	Version string
+	Commit  string
+	Date    string
+}
+
+// NewRootCmd returns a new root command.
 func NewRootCmd() *cobra.Command {
 	ecsCmd := &cobra.Command{
-		Use:           "devpod-provider-ecs",
+		Use:           "devsy-provider-ecs",
 		Short:         "ECS Provider commands",
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -30,32 +39,38 @@ func NewRootCmd() *cobra.Command {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
+func Execute(info BuildInfo) {
+	if info.Version != "" {
+		version.Version = info.Version
+	}
+
 	// build the root command
-	rootCmd := BuildRoot()
+	rootCmd := BuildRoot(info)
 
 	// execute command
 	err := rootCmd.Execute()
 	if err != nil {
-		if exitErr, ok := err.(*ssh.ExitError); ok {
-			os.Exit(exitErr.ExitStatus())
+		var sshExitErr *ssh.ExitError
+		if errors.As(err, &sshExitErr) {
+			os.Exit(sshExitErr.ExitStatus())
 		}
 
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			if len(exitErr.Stderr) > 0 {
-				log.Default.ErrorStreamOnly().Error(string(exitErr.Stderr))
+		var execExitErr *exec.ExitError
+		if errors.As(err, &execExitErr) {
+			if len(execExitErr.Stderr) > 0 {
+				log.Default.ErrorStreamOnly().Error(string(execExitErr.Stderr))
 			}
 
-			os.Exit(exitErr.ExitCode())
+			os.Exit(execExitErr.ExitCode())
 		}
 		log.Default.Fatal(err)
 	}
 }
 
-// BuildRoot creates a new root command from the
-func BuildRoot() *cobra.Command {
+// BuildRoot creates a new root command with all subcommands attached.
+func BuildRoot(info BuildInfo) *cobra.Command {
 	rootCmd := NewRootCmd()
-	rootCmd.Version = version.Version
+	rootCmd.Version = formatVersion(info)
 
 	rootCmd.AddCommand(NewEntrypointCmd())
 	rootCmd.AddCommand(NewTunnelCmd())
@@ -67,4 +82,15 @@ func BuildRoot() *cobra.Command {
 	rootCmd.AddCommand(NewStopCmd())
 	rootCmd.AddCommand(NewTargetArchitectureCmd())
 	return rootCmd
+}
+
+func formatVersion(info BuildInfo) string {
+	v := info.Version
+	if v == "" {
+		v = version.Version
+	}
+	if info.Commit != "" && info.Date != "" {
+		return fmt.Sprintf("%s (commit %s, built %s)", v, info.Commit, info.Date)
+	}
+	return v
 }
