@@ -1,5 +1,6 @@
 env
-devpod-provider-aws
+devsy-provider-ecs
 release
-/test
-/.idea
+.DS_Store
+dist/
+.idea

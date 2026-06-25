@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-// String hashes a given string to a sha256 string
+// String hashes a given string to a sha256 string.
 func String(s string) string {
 	hash := sha256.New()
 	_, _ = io.WriteString(hash, s)

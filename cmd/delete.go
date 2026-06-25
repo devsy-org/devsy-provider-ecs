@@ -3,16 +3,16 @@ package cmd
 import (
 	"context"
 
-	"github.com/loft-sh/devpod-provider-ecs/pkg/ecs"
-	"github.com/loft-sh/devpod-provider-ecs/pkg/options"
-	"github.com/loft-sh/log"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/ecs"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
+	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 )
 
-// DeleteCmd holds the cmd flags
+// DeleteCmd holds the cmd flags.
 type DeleteCmd struct{}
 
-// NewDeleteCmd defines a command
+// NewDeleteCmd defines a command.
 func NewDeleteCmd() *cobra.Command {
 	cmd := &DeleteCmd{}
 	deleteCmd := &cobra.Command{
@@ -31,7 +31,7 @@ func NewDeleteCmd() *cobra.Command {
 	return deleteCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *DeleteCmd) Run(ctx context.Context, options *options.Options, log log.Logger) error {
 	ecsProvider, err := ecs.NewProvider(ctx, options, log)
 	if err != nil {

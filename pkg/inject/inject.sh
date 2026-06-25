@@ -27,7 +27,7 @@ download() {
 
   while :; do
     if [ "$iteration" -gt "$max_iteration" ]; then
-      >&2 echo "error: failed to download devpod"
+      >&2 echo "error: failed to download devsy provider"
       exit 1
     fi
 
@@ -42,7 +42,7 @@ download() {
         echo "error: no download tool found, please install curl or wget"
         exit 127
     fi
-    >&2 echo "error: failed to download devpod"
+    >&2 echo "error: failed to download devsy provider"
     >&2 echo "       command returned: ${cmd_status}"
     >&2 echo "Trying again in 10 seconds..."
     iteration=$((iteration+1))

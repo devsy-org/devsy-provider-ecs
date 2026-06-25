@@ -3,16 +3,16 @@ package cmd
 import (
 	"context"
 
-	"github.com/loft-sh/devpod-provider-ecs/pkg/ecs"
-	"github.com/loft-sh/devpod-provider-ecs/pkg/options"
-	"github.com/loft-sh/log"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/ecs"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
+	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 )
 
-// StopCmd holds the cmd flags
+// StopCmd holds the cmd flags.
 type StopCmd struct{}
 
-// NewStopCmd defines a command
+// NewStopCmd defines a command.
 func NewStopCmd() *cobra.Command {
 	cmd := &StopCmd{}
 	stopCmd := &cobra.Command{
@@ -31,7 +31,7 @@ func NewStopCmd() *cobra.Command {
 	return stopCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *StopCmd) Run(ctx context.Context, options *options.Options, log log.Logger) error {
 	ecsProvider, err := ecs.NewProvider(ctx, options, log)
 	if err != nil {

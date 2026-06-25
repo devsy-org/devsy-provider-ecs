@@ -8,15 +8,17 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/loft-sh/devpod-provider-ecs/pkg/version"
+	"github.com/devsy-org/devsy-provider-ecs/pkg/version"
 )
 
 //go:embed inject.sh
 var Script string
 
-const BaseURL = "https://github.com/loft-sh/devpod-provider-ecs/releases/download/%s/devpod-provider-ecs-linux-%s"
+const releaseBaseURL = "https://github.com/devsy-org/devsy-provider-ecs/releases"
 
-const LatestBaseURL = "https://github.com/loft-sh/devpod-provider-ecs/releases/latest/download/devpod-provider-ecs-linux-%s"
+const BaseURL = releaseBaseURL + "/download/%s/devsy-provider-ecs-linux-%s"
+
+const LatestBaseURL = releaseBaseURL + "/latest/download/devsy-provider-ecs-linux-%s"
 
 func GetContainerEntrypoint(entrypoint []string, cmd []string) ([]string, []string, error) {
 	downloadAmd := ""
@@ -29,7 +31,7 @@ func GetContainerEntrypoint(entrypoint []string, cmd []string) ([]string, []stri
 		downloadArm = fmt.Sprintf(BaseURL, version.Version, "arm64")
 	}
 
-	command := "/workspaces/devpod-provider-ecs entrypoint"
+	command := "/workspaces/devsy-provider-ecs entrypoint"
 	if len(entrypoint) > 0 {
 		out, err := json.Marshal(entrypoint)
 		if err != nil {
@@ -50,7 +52,7 @@ func GetContainerEntrypoint(entrypoint []string, cmd []string) ([]string, []stri
 	injectScript, err := FillTemplate(Script, map[string]string{
 		"DownloadAmd":     downloadAmd,
 		"DownloadArm":     downloadArm,
-		"InstallFilename": "devpod-provider-ecs",
+		"InstallFilename": "devsy-provider-ecs",
 		"InstallDir":      "/workspaces",
 		"Command":         command,
 	})
@@ -61,7 +63,7 @@ func GetContainerEntrypoint(entrypoint []string, cmd []string) ([]string, []stri
 	return []string{"sh"}, []string{"-c", injectScript}, nil
 }
 
-func FillTemplate(templateString string, vars interface{}) (string, error) {
+func FillTemplate(templateString string, vars any) (string, error) {
 	t, err := template.New("gotmpl").Parse(templateString)
 	if err != nil {
 		return "", err
