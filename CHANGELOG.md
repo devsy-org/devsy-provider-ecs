@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/devsy-org/devsy-provider-ecs/compare/v1.0.0...v1.1.0) (2026-06-26)
+
+
+### Miscellaneous Chores
+
+* release 1.1.0 ([#13](https://github.com/devsy-org/devsy-provider-ecs/issues/13)) ([ee463ce](https://github.com/devsy-org/devsy-provider-ecs/commit/ee463ce2665ee6a91b806b6a05f7051cd6c3b299))
+
 ## 1.0.0 (2026-06-25)
 
 
