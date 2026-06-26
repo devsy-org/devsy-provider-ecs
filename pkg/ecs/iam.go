@@ -9,6 +9,7 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
+	"github.com/devsy-org/devsy/pkg/log"
 )
 
 var (
@@ -59,7 +60,7 @@ func (p *EcsProvider) createIamRole(ctx context.Context) (string, error) {
 	}
 
 	// create policy
-	p.Log.Infof("Create iam policy %s...", devsyPolicyName)
+	log.Infof("Create iam policy %s...", devsyPolicyName)
 	policyOutput, err := iamClient.CreatePolicy(ctx, &iam.CreatePolicyInput{
 		PolicyName:     &devsyPolicyName,
 		PolicyDocument: options.Ptr(iamPolicyDocument),
@@ -69,7 +70,7 @@ func (p *EcsProvider) createIamRole(ctx context.Context) (string, error) {
 	}
 
 	// create role
-	p.Log.Infof("Create iam role %s...", devsyRoleName)
+	log.Infof("Create iam role %s...", devsyRoleName)
 	roleOutput, err := iamClient.CreateRole(ctx, &iam.CreateRoleInput{
 		RoleName:                 &devsyRoleName,
 		AssumeRolePolicyDocument: options.Ptr(iamAssumeRolePolicyDocument),
@@ -80,7 +81,7 @@ func (p *EcsProvider) createIamRole(ctx context.Context) (string, error) {
 	}
 
 	// attach policy
-	p.Log.Infof("Attach iam policy %s to role %s...", devsyPolicyName, devsyRoleName)
+	log.Infof("Attach iam policy %s to role %s...", devsyPolicyName, devsyRoleName)
 	_, err = iamClient.AttachRolePolicy(ctx, &iam.AttachRolePolicyInput{
 		PolicyArn: policyOutput.Policy.Arn,
 		RoleName:  &devsyRoleName,

@@ -8,8 +8,8 @@ import (
 	"os/exec"
 
 	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
+	"github.com/devsy-org/devsy/pkg/log"
 	sshserver "github.com/devsy-org/devsy/pkg/ssh/server"
-	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 )
 
@@ -44,18 +44,18 @@ func NewEntrypointCmd() *cobra.Command {
 
 func (cmd *EntrypointCmd) Run() error {
 	address := fmt.Sprintf("127.0.0.1:%d", cmd.Port)
-	server, err := sshserver.NewServer(address, nil, nil, "", "", log.Default)
+	server, err := sshserver.NewServer(address, nil, nil, "", "")
 	if err != nil {
 		return err
 	}
 
-	log.Default.Infof("Listen and serve on: %s", address)
+	log.Infof("Listen and serve on: %s", address)
 	go func() {
 		err = server.ListenAndServe()
 		if err != nil {
-			log.Default.Fatalf("SSH server failed: %v", err)
+			log.Fatalf("SSH server failed: %v", err)
 		} else {
-			log.Default.Fatal("SSH server ended unexpectedly")
+			log.Fatal("SSH server ended unexpectedly")
 		}
 	}()
 

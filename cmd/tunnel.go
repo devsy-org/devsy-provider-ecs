@@ -5,7 +5,6 @@ import (
 
 	"github.com/devsy-org/devsy-provider-ecs/pkg/ecs"
 	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
-	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +39,7 @@ func (cmd *TunnelCmd) Run(ctx context.Context) error {
 		return err
 	}
 
-	ecsProvider, err := ecs.NewProvider(ctx, awsOptions, log.Default.ErrorStreamOnly())
+	ecsProvider, err := ecs.NewProvider(ctx, awsOptions)
 	if err != nil {
 		return err
 	}

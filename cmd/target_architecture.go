@@ -7,7 +7,6 @@ import (
 
 	"github.com/devsy-org/devsy-provider-ecs/pkg/ecs"
 	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
-	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +25,7 @@ func NewTargetArchitectureCmd() *cobra.Command {
 				return err
 			}
 
-			return cmd.Run(context.Background(), options, log.Default.ErrorStreamOnly())
+			return cmd.Run(context.Background(), options)
 		},
 	}
 
@@ -37,9 +36,8 @@ func NewTargetArchitectureCmd() *cobra.Command {
 func (cmd *TargetArchitectureCmd) Run(
 	ctx context.Context,
 	options *options.Options,
-	log log.Logger,
 ) error {
-	ecsProvider, err := ecs.NewProvider(ctx, options, log)
+	ecsProvider, err := ecs.NewProvider(ctx, options)
 	if err != nil {
 		return err
 	}

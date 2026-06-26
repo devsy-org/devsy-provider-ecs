@@ -15,7 +15,7 @@ import (
 	"github.com/devsy-org/devsy-provider-ecs/pkg/options"
 	"github.com/devsy-org/devsy/pkg/devcontainer/config"
 	"github.com/devsy-org/devsy/pkg/driver"
-	"github.com/devsy-org/log"
+	"github.com/devsy-org/devsy/pkg/log"
 )
 
 const statusRunning = "running"
@@ -23,7 +23,6 @@ const statusRunning = "running"
 type EcsProvider struct {
 	Config    *options.Options
 	AwsConfig aws.Config
-	Log       log.Logger
 
 	client *ecs.Client
 }
@@ -31,7 +30,6 @@ type EcsProvider struct {
 func NewProvider(
 	ctx context.Context,
 	options *options.Options,
-	logs log.Logger,
 ) (*EcsProvider, error) {
 	cfg, err := awsConfig.LoadDefaultConfig(ctx)
 	if err != nil {
@@ -42,7 +40,6 @@ func NewProvider(
 	provider := &EcsProvider{
 		Config:    options,
 		AwsConfig: cfg,
-		Log:       logs,
 
 		client: ecs.NewFromConfig(cfg),
 	}
@@ -151,7 +148,7 @@ func (p *EcsProvider) stopTask(ctx context.Context, workspaceId string) error {
 		return err
 	} else if task != nil {
 		// delete the task
-		p.Log.Infof("Stopping task...")
+		log.Infof("Stopping task...")
 		_, err = p.client.StopTask(ctx, &ecs.StopTaskInput{
 			Task:    task.TaskArn,
 			Cluster: options.Ptr(p.Config.ClusterID),
@@ -227,7 +224,7 @@ func (p *EcsProvider) startTask(ctx context.Context, workspaceId string) error {
 		securityGroups = append(securityGroups, p.Config.SecurityGroupID)
 	}
 
-	p.Log.Infof("Running Task...")
+	log.Infof("Running Task...")
 	taskOutput, err := p.client.RunTask(ctx, &ecs.RunTaskInput{
 		TaskDefinition:       options.Ptr(taskDefinitionID),
 		Cluster:              options.Ptr(p.Config.ClusterID),
@@ -256,7 +253,7 @@ func (p *EcsProvider) waitForTaskRunning(ctx context.Context, workspaceId string
 	timeout := time.Minute * 5
 	now := time.Now()
 	for time.Since(now) < timeout {
-		p.Log.Infof("Waiting for Task to become running...")
+		log.Infof("Waiting for Task to become running...")
 		task, err := p.getTaskID(ctx, workspaceId)
 		if err != nil {
 			return fmt.Errorf("error retrieving task: %w", err)
@@ -266,7 +263,7 @@ func (p *EcsProvider) waitForTaskRunning(ctx context.Context, workspaceId string
 		if err != nil {
 			return err
 		} else if running {
-			p.Log.Info("Task successfully started")
+			log.Info("Task successfully started")
 			return nil
 		}
 
