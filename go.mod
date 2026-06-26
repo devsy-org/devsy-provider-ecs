@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iam v1.22.5
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.44.7
 	github.com/aws/session-manager-plugin v0.0.0-20230808183647-dbfa0bfdb04b
-	github.com/devsy-org/devsy v1.10.0-beta.36.0.20260625223048-32c704a42e7e
+	github.com/devsy-org/devsy v1.0.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
 	github.com/pkg/errors v0.9.1
