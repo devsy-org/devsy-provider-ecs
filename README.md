@@ -25,7 +25,7 @@ and `AWS_SECRET_ACCESS_KEY=` variables.
 After the initial setup, just use:
 
 ```sh
-devsy up .
+devsy workspace up .
 ```
 
 You'll need to wait for the task and environment setup.
