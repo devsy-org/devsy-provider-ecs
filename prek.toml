@@ -72,7 +72,7 @@ stages = ["commit-msg"]
 
 [[repos]]
 repo = "https://github.com/golangci/golangci-lint"
-rev = "v2.11.4"
+rev = "v2.15.0"
 
 [[repos.hooks]]
 id = "golangci-lint"
