@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/devsy-org/devsy-provider-ecs/compare/v1.1.0...v1.1.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **deps:** update github.com/aws/session-manager-plugin digest to 6430675 ([#39](https://github.com/devsy-org/devsy-provider-ecs/issues/39)) ([5f543fe](https://github.com/devsy-org/devsy-provider-ecs/commit/5f543fe56baffa6d0ed571d3bee7901d63b992bf))
+
 ## [1.1.0](https://github.com/devsy-org/devsy-provider-ecs/compare/v1.0.0...v1.1.0) (2026-06-26)
 
 
