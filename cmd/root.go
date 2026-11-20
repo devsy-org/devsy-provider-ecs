@@ -7,6 +7,7 @@ import (
 	"os/exec"
 
 	"github.com/devsy-org/devsy-provider-ecs/pkg/version"
+	"github.com/devsy-org/devsy/logging"
 	"github.com/devsy-org/devsy/pkg/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
@@ -28,9 +29,10 @@ func NewRootCmd() *cobra.Command {
 		SilenceUsage:  true,
 
 		PersistentPreRunE: func(cobraCmd *cobra.Command, args []string) error {
-			cfg := log.Config{Verbosity: 1}
-			if os.Getenv("DEVSY_DEBUG") == "true" {
-				cfg.Debug = true
+			cfg, err := providerLogConfig()
+			if err != nil {
+				log.Init(log.Config{DefaultLevel: log.LevelInfoName, Format: "json"})
+				return err
 			}
 			log.Init(cfg)
 
@@ -39,6 +41,25 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	return ecsCmd
+}
+
+func providerLogConfig() (log.Config, error) {
+	config, invalid := logging.ResolveProvider(
+		os.Getenv("DEVSY_LOG_LEVEL"),
+		os.Getenv("DEVSY_LOG_FORMAT"),
+	)
+	if invalid.Level {
+		return log.Config{}, errors.New("invalid DEVSY_LOG_LEVEL")
+	}
+	if invalid.Format {
+		return log.Config{}, errors.New("invalid DEVSY_LOG_FORMAT")
+	}
+
+	return log.Config{
+		Level:        logging.LevelName(config.Level),
+		DefaultLevel: log.LevelInfoName,
+		Format:       string(config.Format),
+	}, nil
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

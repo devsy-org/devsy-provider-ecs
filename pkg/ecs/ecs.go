@@ -295,18 +295,18 @@ func taskRunning(task *types.Task) (bool, error) {
 	return false, nil
 }
 
-func taskStatus(task *types.Task) string {
+func taskStatus(task *types.Task) config.ContainerStatus {
 	if task.LastStatus == nil {
-		return "created"
+		return config.ContainerStatusCreated
 	}
 
 	switch strings.ToUpper(*task.LastStatus) {
 	case string(types.DesiredStatusRunning):
-		return statusRunning
+		return config.ContainerStatusRunning
 	case string(types.DesiredStatusStopped):
-		return "exited"
+		return config.ContainerStatusExited
 	default:
-		return "created"
+		return config.ContainerStatusCreated
 	}
 }
 

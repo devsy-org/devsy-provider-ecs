@@ -54,6 +54,17 @@ Options can either be set in `env` or on the command line, for example:
 devsy provider set-options -o TASK_CPU="1 vcpu" -o TASK_MEMORY="2 gb"
 ```
 
+## Logging
+
+Provider diagnostics are written to standard error as JSON by default. Set
+`DEVSY_LOG_LEVEL` to `error`, `warn`, `info`, `debug`, or `trace`. The default
+is `info` when the provider runs independently. Devsy passes its effective log
+level to the provider.
+
+Set `DEVSY_LOG_FORMAT` to `json`, `text`, `plain`, or `logfmt` to choose the
+diagnostic format. An unset value or `auto` selects JSON. Protocol output and
+remote command streams keep their existing destinations.
+
 ## Local Development
 
 To build and test the provider locally, use [task](https://taskfile.dev/) `task build:provider:dev`. The provider file is created in `./dist/provider.yaml`.

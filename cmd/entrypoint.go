@@ -44,7 +44,7 @@ func NewEntrypointCmd() *cobra.Command {
 
 func (cmd *EntrypointCmd) Run() error {
 	address := fmt.Sprintf("127.0.0.1:%d", cmd.Port)
-	server, err := sshserver.NewServer(address, nil, nil, "", "")
+	server, err := sshserver.NewServer(address, sshserver.ServerOptions{})
 	if err != nil {
 		return err
 	}
