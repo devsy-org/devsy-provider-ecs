@@ -122,6 +122,8 @@ github.com/devsy-org/apiserver v1.5.0 h1:tAr2tH9QwtNEu8BTbBgHkJD6ae43S5LDdHGphLs
 github.com/devsy-org/apiserver v1.5.0/go.mod h1:2jKuqy8XdH/g4bIjmkj3efQgshN/NjMzm17SkvvSR88=
 github.com/devsy-org/devsy v1.0.0 h1:MjzVE7BzYYBVZbKluN65ol2OH3A0oEy6wNtNq9XcNcU=
 github.com/devsy-org/devsy v1.0.0/go.mod h1:rlDNYXcAP+5Fnc+BvvYO2NqAHysUH27BFaM/ObCmGkI=
+github.com/devsy-org/devsy/logging v0.0.0-20261121002232-42213a6fbc3f h1:ZEosyV/3ln3ofOJLSbzwAbS4+m/1vstAabv/I2L+lyk=
+github.com/devsy-org/devsy/logging v0.0.0-20261121002232-42213a6fbc3f/go.mod h1:kpwoMhSdrhnJfTJ014ht04BLw0DS7FyF33RqIIe8CKs=
 github.com/devsy-org/ssh v1.2.0 h1:rwECFiTdfqnHX9Ft9ZxTbHM504If2vNs8istL8hdngo=
 github.com/devsy-org/ssh v1.2.0/go.mod h1:+/FJAVr49LxNS0E4IPOXQZOnwrvNqc6cNLT7unu3MD4=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=

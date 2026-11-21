@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strconv"
@@ -84,7 +85,7 @@ func executeCommand(ctx context.Context, ec execCommand) error {
 
 	tunnelChan := make(chan error, 1)
 	go func() {
-		writer := devsylog.Writer(devsylog.LevelInfo)
+		writer := devsylog.Writer(slog.LevelInfo)
 		defer func() { _ = writer.Close() }()
 
 		tunnelChan <- startProxyCommand(cancelCtx, ec.target, Stdio{
@@ -98,7 +99,7 @@ func executeCommand(ctx context.Context, ec execCommand) error {
 	containerChan := make(chan error, 1)
 	go func() {
 		// start ssh client as root / default user
-		sshClient, err := ssh.StdioClientWithUser(stdoutReader, stdinWriter, ec.user, false)
+		sshClient, err := ssh.StdioClientWithUser(stdoutReader, stdinWriter, ec.user)
 		if err != nil {
 			containerChan <- errors.Wrap(err, "create ssh client")
 			return
